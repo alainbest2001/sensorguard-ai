@@ -228,7 +228,7 @@ if run_btn:
             threshold_pct=threshold_pct
         )
         # Passe les labels pour auto-calibrer la contamination
-        detector.fit(data["train"], labels_hint=data["labels"])
+        detector.fit(data["train"])
 
     with st.spinner("Calcul des scores d'anomalie sur le test set…"):
         result = detector.predict(data["test"])
