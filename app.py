@@ -145,13 +145,13 @@ with st.sidebar:
 
     threshold_pct = st.slider(
         "Seuil adaptatif (percentile)",
-        min_value=80, max_value=99, value=95, step=1,
+        min_value=80, max_value=99, value=94, step=1,
         help="Percentile du score de train utilisé comme seuil de détection."
     )
 
     window_size = st.slider(
         "Fenêtre d'analyse",
-        min_value=8, max_value=128, value=32, step=8,
+        min_value=8, max_value=128, value=64, step=8,
         help="Taille de la fenêtre glissante pour le scoring local."
     )
 
@@ -222,13 +222,18 @@ if run_btn:
             st.error(f"❌ Erreur chargement : {e}")
             st.stop()
 
-    with st.spinner("Entraînement du modèle sur données normales…"):
+    prog_bar = st.progress(0, text="Initialisation LSTM…")
+    with st.spinner("Entraînement LSTM Autoencoder…"):
         detector = SensorGuardDetector(
             window=window_size,
-            threshold_pct=threshold_pct
+            threshold_pct=threshold_pct,
+            hidden=32,
+            epochs=30,
         )
-        # Passe les labels pour auto-calibrer la contamination
-        detector.fit(data["train"])
+        def _cb(ep, loss):
+            prog_bar.progress(int(ep/30*100), text=f"Epoch {ep}/30 — loss={loss:.6f}")
+        detector.fit(data["train"], progress_cb=_cb)
+        prog_bar.empty()
 
     with st.spinner("Calcul des scores d'anomalie sur le test set…"):
         result = detector.predict(data["test"])
@@ -506,6 +511,25 @@ Affichage : {T} premiers timesteps
 """, unsafe_allow_html=True)
 
         st.markdown("---")
+        # Courbe de perte LSTM
+        if result.get("losses"):
+            losses = result["losses"]
+            fig_loss = go.Figure()
+            fig_loss.add_trace(go.Scatter(
+                y=losses, mode="lines+markers",
+                line=dict(color="#00d4ff", width=2),
+                marker=dict(size=4), name="Train Loss"
+            ))
+            fig_loss.update_layout(
+                title="Convergence LSTM Autoencoder",
+                plot_bgcolor="#05080f", paper_bgcolor="#0d1421",
+                font=dict(family="Space Mono", color="#c8d8f0", size=10),
+                xaxis=dict(title="Epoch", gridcolor="#111827"),
+                yaxis=dict(title="MSE Loss", gridcolor="#111827"),
+                height=220, margin=dict(l=0,r=0,t=30,b=0)
+            )
+            st.plotly_chart(fig_loss, use_container_width=True)
+
         st.markdown("### RECOMMANDATIONS AUTOMATIQUES")
 
         recs = []
