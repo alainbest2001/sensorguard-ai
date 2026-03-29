@@ -247,6 +247,13 @@ if st.session_state.result is not None:
     data    = st.session_state.data
     metrics = st.session_state.metrics
 
+    # Bandeau source
+    source = data.get("source", "synthetic")
+    if source == "synthetic":
+        st.info("⚡ Mode DÉMO — Données synthétiques (anomalies injectées). Pour les données NASA réelles : exécuter fetch_data.py en local puis git push.")
+    else:
+        st.success(f"✅ Données NASA réelles — Canal {data['chan_id']} chargé depuis le repo.")
+
     scores      = result["scores"]
     predictions = result["predictions"]
     labels      = data["labels"]
