@@ -189,13 +189,14 @@ DÉTECTION D'ANOMALIES · {dataset_choice} · CANAL {channel_id if 'channel_id' 
 """, unsafe_allow_html=True)
 
 with col_status:
-    if "result" in st.session_state:
+    if "result" in st.session_state and st.session_state.result is not None:
         r = st.session_state.result
-        n_anom = int(r["predictions"].sum())
-        if n_anom > 0:
-            st.markdown(f'<div class="anomaly-alert">⚠ {n_anom} ANOMALIES DÉTECTÉES</div>', unsafe_allow_html=True)
-        else:
-            st.markdown('<div class="status-ok">✓ SIGNAL NOMINAL</div>', unsafe_allow_html=True)
+        if r.get("predictions") is not None:
+            n_anom = int(r["predictions"].sum())
+            if n_anom > 0:
+                st.markdown(f'<div class="anomaly-alert">⚠ {n_anom} ANOMALIES DÉTECTÉES</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="status-ok">✓ SIGNAL NOMINAL</div>', unsafe_allow_html=True)
 
 st.markdown("---")
 
@@ -248,11 +249,11 @@ if st.session_state.result is not None:
     metrics = st.session_state.metrics
 
     # Bandeau source
-    source = data.get("source", "synthetic")
+    source = data.get("source", "synthetic") if data else "synthetic"
     if source == "synthetic":
-        st.info("⚡ Mode DÉMO — Données synthétiques (anomalies injectées). Pour les données NASA réelles : exécuter fetch_data.py en local puis git push.")
+        st.info("⚡ Mode DÉMO — Données synthétiques (anomalies injectées).")
     else:
-        st.success(f"✅ Données NASA réelles — Canal {data['chan_id']} chargé depuis le repo.")
+        st.success(f"✅ Données réelles — Canal {data['chan_id']} · {data['test'].shape[0]:,} points · {int(data['labels'].sum())} anomalies NASA.")
 
     scores      = result["scores"]
     predictions = result["predictions"]
